@@ -3,7 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const mongoose = require('mongoose');
-const bodyParser = require('body-parser')
+const bodyParser = require('body-parser');
+const dns = require('dns');
 var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 mongoose.connect(process.env.MONGO_URI, {
@@ -44,13 +45,15 @@ app.listen(port, function() {
 app.post('/api/shorturl', urlencodedParser, (req, res) => {
 
   const requrl = req.body.url;
-  try {
-    const url = new URL(requrl);
-    console.log(url.toString());
+  let isTrue = checkUrl(requrl.toString());
+    if (!isTrue) {
+      return res.json({
+        error: "invalid url"
+      });
+    }
     Url.exists({ url: requrl }, (err, dat) => {
       if (err) return console.log(err);
       else if (!dat) {
-        console.log(typeof data)
         Url.find({ shortened_url: { $gte: 0 } }).sort({ shortened_url: -1 }).limit(1).exec((err, data) => {
           if (err) return console.log(err);
           urlmodel = new Url({
@@ -76,12 +79,6 @@ app.post('/api/shorturl', urlencodedParser, (req, res) => {
         });
       }
     });
-  } catch (error) {
-    console.log(error);
-    return res.json({
-      error: "invalid url"
-    })
-  }
 });
 
 app.get('/api/shorturl/:url', urlencodedParser, (req, res) => {
@@ -103,6 +100,13 @@ app.get('/api/shorturl/:url', urlencodedParser, (req, res) => {
 
 });
 
-
+var checkUrl = (urlString) =>{
+  try{
+    let url = new URL(urlString);
+    return url.protocol === "http:" || url.protocol === "https:";
+  }catch(error){
+    return false;
+  }
+}
 
 
